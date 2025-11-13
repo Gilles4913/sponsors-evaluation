@@ -41,6 +41,7 @@ import { ResendDiagnostic } from './components/ResendDiagnostic';
 import { EmailLogsPage } from './components/EmailLogsPage';
 import { TenantEdit } from './components/TenantEdit';
 import { SupabaseDiagnostic } from './components/SupabaseDiagnostic';
+import { useAsTenant } from './hooks/useAsTenant';
 
 function TemplateDetailWrapper() {
   const { idOrKey } = useParams();
@@ -182,7 +183,9 @@ function AppContent() {
 }
 
 function renderAuthenticatedContent(profile: any, path: string) {
-  if (profile.role === 'super_admin') {
+  const { isMasquerading } = useAsTenant();
+
+  if (profile.role === 'super_admin' && !isMasquerading) {
     if (path === '/super' || path === '/clubs') {
       return (
         <AuthGuard allow={['super_admin']}>
@@ -318,23 +321,23 @@ function renderAuthenticatedContent(profile: any, path: string) {
     );
   }
 
-  if (profile.role === 'club_admin') {
-    if (path === '/sponsors') {
+  if (profile.role === 'club_admin' || isMasquerading) {
+    if (path === '/club/sponsors' || path === '/sponsors') {
       return <SponsorsList />;
     }
-    if (path === '/campaigns') {
+    if (path === '/club/campaigns' || path === '/campaigns') {
       return <CampaignsList />;
     }
-    if (path === '/reminders') {
+    if (path === '/club/reminders' || path === '/reminders') {
       return <Reminders />;
     }
-    if (path === '/scheduled') {
+    if (path === '/club/scheduled' || path === '/scheduled') {
       return <ScheduledSends />;
     }
-    if (path === '/settings') {
+    if (path === '/club/settings' || path === '/settings') {
       return <SettingsClub />;
     }
-    if (path === '/settings/legal') {
+    if (path === '/club/settings/legal' || path === '/settings/legal') {
       return <SettingsLegal />;
     }
     if (path === '/club/legal') {
@@ -353,6 +356,9 @@ function renderAuthenticatedContent(profile: any, path: string) {
           <EmailTestLab />
         </AuthGuard>
       );
+    }
+    if (path === '/club/dashboard' || path === '/club') {
+      return <ClubDashboard />;
     }
     return <ClubDashboard />;
   }
