@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Mail, Search, X, Eye, Save, AlertCircle, Copy, Plus } from 'lucide-react';
+import { Mail, Search, X, Eye, Save, AlertCircle, Copy, Plus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
 import { useAsTenant } from '../hooks/useAsTenant';
@@ -48,6 +48,9 @@ export function EmailTemplatesHub() {
   const [exampleValues, setExampleValues] = useState<Record<string, string | number>>(DEFAULT_EXAMPLE_VALUES);
   const [exampleJsonText, setExampleJsonText] = useState(JSON.stringify(DEFAULT_EXAMPLE_VALUES, null, 2));
   const [jsonError, setJsonError] = useState('');
+  const [helpExpanded, setHelpExpanded] = useState(false);
+  const [createMode, setCreateMode] = useState(false);
+  const [newTemplateKey, setNewTemplateKey] = useState('');
 
   useEffect(() => {
     fetchTemplates();
@@ -122,6 +125,7 @@ export function EmailTemplatesHub() {
   };
 
   const handleSelectTemplate = (template: NormalizedTemplate) => {
+    setCreateMode(false);
     setSelectedTemplate(template);
     setEditForm({
       subject: template.subject,
@@ -137,13 +141,36 @@ export function EmailTemplatesHub() {
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
+    setCreateMode(false);
     setSelectedTemplate(null);
+    setNewTemplateKey('');
     setEditForm({ subject: '', html: '' });
     setShowPreview(false);
     setPreviewHtml('');
     setExampleJsonText(JSON.stringify(DEFAULT_EXAMPLE_VALUES, null, 2));
     setExampleValues(DEFAULT_EXAMPLE_VALUES);
     setJsonError('');
+  };
+
+  const handleDeleteTemplate = async (template: NormalizedTemplate) => {
+    if (!confirm(`Voulez-vous vraiment supprimer le template "${template.key}" ?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('email_templates')
+        .delete()
+        .eq('id', template.id);
+
+      if (error) throw error;
+
+      toast.success('Template supprimé avec succès');
+      await fetchTemplates();
+    } catch (error: any) {
+      console.error('Error deleting template:', error);
+      toast.error('Erreur lors de la suppression');
+    }
   };
 
   const handleExampleJsonChange = (newJson: string) => {
@@ -238,20 +265,27 @@ export function EmailTemplatesHub() {
   };
 
   const handleSave = async () => {
-    if (!selectedTemplate) return;
+    if (createMode && !newTemplateKey.trim()) {
+      toast.error('Veuillez saisir une clé pour le template');
+      return;
+    }
+
+    if (!createMode && !selectedTemplate) return;
 
     setSaving(true);
     try {
+      const tenantId = activeTab === 'tenant' ? effectiveTenantId : null;
+
       const result = await saveEmailTemplate({
-        id: selectedTemplate.id,
-        tenant_id: selectedTemplate.tenant_id,
-        key: selectedTemplate.key,
+        id: createMode ? undefined : selectedTemplate?.id,
+        tenant_id: tenantId,
+        key: createMode ? newTemplateKey.trim() : selectedTemplate!.key,
         subject: editForm.subject,
         html: editForm.html,
       });
 
       if (result.ok) {
-        toast.success('Template enregistré avec succès');
+        toast.success(createMode ? 'Template créé avec succès' : 'Template enregistré avec succès');
         await fetchTemplates();
         handleCloseDrawer();
       } else {
@@ -291,45 +325,57 @@ export function EmailTemplatesHub() {
           </div>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-lg">
-          <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">
-            Rappel : qui utilise quoi ?
-          </h3>
+        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-lg overflow-hidden">
+          <button
+            onClick={() => setHelpExpanded(!helpExpanded)}
+            className="w-full flex items-center justify-between p-4 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition"
+          >
+            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">
+              Rappel : qui utilise quoi ?
+            </h3>
+            {helpExpanded ? (
+              <ChevronUp className="w-5 h-5 text-blue-700 dark:text-blue-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-blue-700 dark:text-blue-400" />
+            )}
+          </button>
 
-          <div className="space-y-3 text-sm text-blue-800 dark:text-blue-400">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">🔵</span>
-                <strong className="text-blue-900 dark:text-blue-300">Templates E-mails Globaux (Super Admin)</strong>
+          {helpExpanded && (
+            <div className="px-4 pb-4 space-y-3 text-sm text-blue-800 dark:text-blue-400">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🔵</span>
+                  <strong className="text-blue-900 dark:text-blue-300">Templates E-mails Globaux (Super Admin)</strong>
+                </div>
+                <p className="ml-7 mb-2">Ils servent pour les actions techniques / admin, par exemple :</p>
+                <ul className="ml-11 space-y-1 list-disc">
+                  <li>Invitation d'un club à rejoindre la plateforme</li>
+                  <li>Renvoyer l'invitation à l'admin du club</li>
+                  <li>E-mail de test technique (vérifier Resend)</li>
+                  <li>Notification système (erreur, information importante)</li>
+                  <li>(Optionnel) reset de mot de passe custom si tu le gères toi-même</li>
+                </ul>
+                <p className="ml-7 mt-2 italic">
+                  👉 C'est le Super Admin et les routes API admin qui consomment ces modèles.<br/>
+                  👉 Ils ont tenant_id = NULL et des key du style global_*.
+                </p>
               </div>
-              <p className="ml-7 mb-2">Ils servent pour les actions techniques / admin, par exemple :</p>
-              <ul className="ml-11 space-y-1 list-disc">
-                <li>Invitation d'un club à rejoindre la plateforme</li>
-                <li>Renvoyer l'invitation à l'admin du club</li>
-                <li>E-mail de test technique (vérifier Resend)</li>
-                <li>Notification système (erreur, information importante)</li>
-                <li>(Optionnel) reset de mot de passe custom si tu le gères toi-même</li>
-              </ul>
-              <p className="ml-7 mt-2 italic">
-                👉 C'est le Super Admin et les routes API admin qui consomment ces modèles.<br/>
-                👉 Ils ont tenant_id = NULL et des key du style global_*.
-              </p>
-            </div>
 
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">🟢</span>
-                <strong className="text-blue-900 dark:text-blue-300">Templates "par défaut" (Club)</strong>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🟢</span>
+                  <strong className="text-blue-900 dark:text-blue-300">Templates "par défaut" (Club)</strong>
+                </div>
+                <p className="ml-7 mb-2">Ce sont les modèles "métier", utilisés dans le workflow club/sponsors :</p>
+                <ul className="ml-11 space-y-1 list-disc">
+                  <li>Invitation d'un sponsor à participer au projet écran</li>
+                  <li>Relances (J-5, J-10, etc.)</li>
+                  <li>Confirmation/merci après une promesse</li>
+                  <li>Récapitulatif de campagne (club + sponsors)</li>
+                </ul>
               </div>
-              <p className="ml-7 mb-2">Ce sont les modèles "métier", utilisés dans le workflow club/sponsors :</p>
-              <ul className="ml-11 space-y-1 list-disc">
-                <li>Invitation d'un sponsor à participer au projet écran</li>
-                <li>Relances (J-5, J-10, etc.)</li>
-                <li>Confirmation/merci après une promesse</li>
-                <li>Récapitulatif de campagne (club + sponsors)</li>
-              </ul>
             </div>
-          </div>
+          )}
         </div>
 
         {showTenantWarning && (
@@ -381,24 +427,39 @@ export function EmailTemplatesHub() {
           </div>
 
           <div className="p-6 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                data-testid="search-input"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher par key ou subject..."
-                className="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  data-testid="search-input"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher par key ou subject..."
+                  className="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                />
+                  {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setCreateMode(true);
+                  setNewTemplateKey('');
+                  setEditForm({ subject: '', html: '' });
+                  setSelectedTemplate(null);
+                  setDrawerOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition text-sm font-medium whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                Créer
+              </button>
             </div>
 
             {loading ? (
@@ -419,11 +480,13 @@ export function EmailTemplatesHub() {
                 {filteredTemplates.map((template) => (
                   <div
                     key={template.id}
-                    onClick={() => handleSelectTemplate(template)}
-                    className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition"
+                    className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => handleSelectTemplate(template)}
+                      >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-slate-900 dark:text-white">
                             {template.key}
@@ -451,7 +514,19 @@ export function EmailTemplatesHub() {
                           </p>
                         )}
                       </div>
-                      <Mail className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTemplate(template);
+                          }}
+                          className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <Mail className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -461,7 +536,7 @@ export function EmailTemplatesHub() {
         </div>
       </div>
 
-      {drawerOpen && selectedTemplate && (
+      {drawerOpen && (createMode || selectedTemplate) && (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex justify-end"
           onClick={(e) => {
@@ -475,10 +550,13 @@ export function EmailTemplatesHub() {
             <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-6 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {selectedTemplate.key}
+                  {createMode ? 'Créer un template' : selectedTemplate?.key}
                 </h2>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  {selectedTemplate.scope === 'global' ? 'Template global' : 'Template du club'}
+                  {createMode
+                    ? (activeTab === 'tenant' ? 'Nouveau template du club' : 'Nouveau template global')
+                    : (selectedTemplate?.scope === 'global' ? 'Template global' : 'Template du club')
+                  }
                 </p>
               </div>
               <button
@@ -490,6 +568,24 @@ export function EmailTemplatesHub() {
             </div>
 
             <div className="p-6 space-y-6">
+              {createMode && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Clé du template *
+                  </label>
+                  <input
+                    type="text"
+                    value={newTemplateKey}
+                    onChange={(e) => setNewTemplateKey(e.target.value)}
+                    placeholder="ex: invitation, global_welcome, etc."
+                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Utilisez le préfixe "global_" pour les templates globaux (ex: global_admin_invite)
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Sujet
