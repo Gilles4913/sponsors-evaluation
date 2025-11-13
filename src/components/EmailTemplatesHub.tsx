@@ -291,6 +291,47 @@ export function EmailTemplatesHub() {
           </div>
         </div>
 
+        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-lg">
+          <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">
+            Rappel : qui utilise quoi ?
+          </h3>
+
+          <div className="space-y-3 text-sm text-blue-800 dark:text-blue-400">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🔵</span>
+                <strong className="text-blue-900 dark:text-blue-300">Templates E-mails Globaux (Super Admin)</strong>
+              </div>
+              <p className="ml-7 mb-2">Ils servent pour les actions techniques / admin, par exemple :</p>
+              <ul className="ml-11 space-y-1 list-disc">
+                <li>Invitation d'un club à rejoindre la plateforme</li>
+                <li>Renvoyer l'invitation à l'admin du club</li>
+                <li>E-mail de test technique (vérifier Resend)</li>
+                <li>Notification système (erreur, information importante)</li>
+                <li>(Optionnel) reset de mot de passe custom si tu le gères toi-même</li>
+              </ul>
+              <p className="ml-7 mt-2 italic">
+                👉 C'est le Super Admin et les routes API admin qui consomment ces modèles.<br/>
+                👉 Ils ont tenant_id = NULL et des key du style global_*.
+              </p>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🟢</span>
+                <strong className="text-blue-900 dark:text-blue-300">Templates "par défaut" (Club)</strong>
+              </div>
+              <p className="ml-7 mb-2">Ce sont les modèles "métier", utilisés dans le workflow club/sponsors :</p>
+              <ul className="ml-11 space-y-1 list-disc">
+                <li>Invitation d'un sponsor à participer au projet écran</li>
+                <li>Relances (J-5, J-10, etc.)</li>
+                <li>Confirmation/merci après une promesse</li>
+                <li>Récapitulatif de campagne (club + sponsors)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {showTenantWarning && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
@@ -387,15 +428,19 @@ export function EmailTemplatesHub() {
                           <span className="font-medium text-slate-900 dark:text-white">
                             {template.key}
                           </span>
-                          <span
-                            className={`px-2 py-0.5 text-xs font-medium rounded ${
-                              template.scope === 'global'
-                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                            }`}
-                          >
-                            {template.scope === 'global' ? 'Global' : 'Tenant'}
-                          </span>
+                          {template.key.startsWith('global_') ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                              🔵 Global
+                            </span>
+                          ) : activeTab === 'default' ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                              🟢 Par défaut
+                            </span>
+                          ) : template.scope === 'tenant' ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                              Club
+                            </span>
+                          ) : null}
                         </div>
                         <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
                           {template.subject}
