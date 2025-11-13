@@ -64,10 +64,13 @@ export function ClubDashboard() {
 
   useEffect(() => {
     fetchCampaigns();
-  }, []);
+  }, [effectiveTenantId]);
 
   const fetchCampaigns = async () => {
-    if (!effectiveTenantId) return;
+    if (!effectiveTenantId) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     const { data, error } = await supabase
