@@ -95,7 +95,7 @@ export function EmailTemplatesHub() {
   );
 
   const defaultTemplates = useMemo(
-    () => allTemplates.filter((t) => t.scope === 'global' && CANONICAL_KEYS.includes(t.key)),
+    () => allTemplates.filter((t) => t.scope === 'global' && (t.is_default === true || CANONICAL_KEYS.includes(t.key))),
     [allTemplates]
   );
 

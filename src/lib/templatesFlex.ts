@@ -131,6 +131,7 @@ function normalizeRow(row: any): NormalizedTemplate {
     subject: row.subject || '',
     html,
     updated_at,
+    is_default: row.is_default ?? false,
   };
 }
 
@@ -186,11 +187,11 @@ export async function loadTemplatesFlex(
     ? 'tenant_id IS NULL'
     : `(tenant_id IS NULL OR tenant_id='${tenantId}')`;
 
-  lastSql = `SELECT id, tenant_id, key, subject, html, created_at FROM email_templates WHERE ${tenantFilter} ORDER BY tenant_id ASC NULLS FIRST, created_at DESC`;
+  lastSql = `SELECT id, tenant_id, key, subject, html, created_at, is_default FROM email_templates WHERE ${tenantFilter} ORDER BY tenant_id ASC NULLS FIRST, created_at DESC`;
 
   let query = supabase
     .from('email_templates')
-    .select('id, tenant_id, key, subject, html, created_at');
+    .select('id, tenant_id, key, subject, html, created_at, is_default');
 
   if (tenantId === null || isTenantIdFalsy) {
     query = query.is('tenant_id', null);
@@ -223,11 +224,11 @@ export async function loadTemplatesFlex(
     };
   }
 
-  lastSql = `SELECT id, tenant_id, type, subject, html_body, updated_at FROM email_templates WHERE ${tenantFilter} ORDER BY tenant_id ASC NULLS FIRST, updated_at DESC`;
+  lastSql = `SELECT id, tenant_id, type, subject, html_body, updated_at, is_default FROM email_templates WHERE ${tenantFilter} ORDER BY tenant_id ASC NULLS FIRST, updated_at DESC`;
 
   let queryB = supabase
     .from('email_templates')
-    .select('id, tenant_id, type, subject, html_body, updated_at');
+    .select('id, tenant_id, type, subject, html_body, updated_at, is_default');
 
   if (tenantId === null || isTenantIdFalsy) {
     queryB = queryB.is('tenant_id', null);
