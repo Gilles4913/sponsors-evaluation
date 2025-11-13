@@ -86,7 +86,6 @@ export function AdminClubsNew() {
       setAsTenantId(result.tenant_id);
       localStorage.setItem('as_tenant_id', result.tenant_id);
       window.location.href = '/club/dashboard';
-      window.location.reload();
     }
   };
 

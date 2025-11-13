@@ -28,7 +28,10 @@ export function ScheduledSends() {
   }, [effectiveTenantId]);
 
   const loadData = async () => {
-    if (!effectiveTenantId) return;
+    if (!effectiveTenantId) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
