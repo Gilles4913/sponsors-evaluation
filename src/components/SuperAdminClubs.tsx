@@ -290,7 +290,8 @@ export function SuperAdminClubs() {
 
   const handleViewAsClub = (tenantId: string) => {
     localStorage.setItem('as_tenant_id', tenantId);
-    window.location.href = `/club/dashboard?asTenant=${tenantId}`;
+    window.location.href = '/club/dashboard';
+    window.location.reload();
   };
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);

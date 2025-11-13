@@ -116,7 +116,8 @@ export function AdminClubs() {
     setAsTenantId(club.id);
     localStorage.setItem('as_tenant_id', club.id);
     toast.success(`Masquerade activé : ${club.name}`);
-    window.location.href = '/dashboard';
+    window.location.href = '/club/dashboard';
+    window.location.reload();
   };
 
   const handleToggleStatus = async (club: Club) => {

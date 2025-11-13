@@ -84,7 +84,9 @@ export function AdminClubsNew() {
   const handleViewAsClub = () => {
     if (result?.tenant_id) {
       setAsTenantId(result.tenant_id);
-      navigate('/dashboard');
+      localStorage.setItem('as_tenant_id', result.tenant_id);
+      window.location.href = '/club/dashboard';
+      window.location.reload();
     }
   };
 
