@@ -3,6 +3,7 @@ import { Mail, Search, X, Eye, Save, AlertCircle, Copy, Plus, ChevronDown, Chevr
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
 import { useAsTenant } from '../hooks/useAsTenant';
+import { useTheme } from '../contexts/ThemeContext';
 import { Layout } from './Layout';
 import { loadTemplatesFlex, NormalizedTemplate } from '../lib/templatesFlex';
 import { saveEmailTemplate } from '../services/emailTemplates';
@@ -22,6 +23,7 @@ type TabType = 'global' | 'default' | 'tenant';
 export function EmailTemplatesHub() {
   const toast = useToast();
   const { effectiveTenantId, tenantData } = useAsTenant();
+  const { theme } = useTheme();
   const htmlTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -262,7 +264,31 @@ export function EmailTemplatesHub() {
       }
     }
 
-    setPreviewHtml(htmlFinal);
+    const bgColor = theme === 'dark' ? '#0f172a' : '#ffffff';
+    const textColor = theme === 'dark' ? '#e2e8f0' : '#1e293b';
+
+    const styledHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body {
+              background-color: ${bgColor};
+              color: ${textColor};
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              padding: 20px;
+              margin: 0;
+            }
+          </style>
+        </head>
+        <body>
+          ${htmlFinal}
+        </body>
+      </html>
+    `;
+
+    setPreviewHtml(styledHtml);
     setShowPreview(true);
   };
 
