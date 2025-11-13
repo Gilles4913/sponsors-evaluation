@@ -16,6 +16,7 @@ export type EmailTemplateInput = {
   subject: string;
   html: string;              // en Mode B ça mappe "html_body"
   text_body?: string | null; // optionnel
+  is_default?: boolean;      // disponible par défaut pour les clubs
 };
 
 export type SaveResult =
@@ -33,9 +34,12 @@ function buildPayloadModeA(input: EmailTemplateInput) {
   if (typeof input.subject === 'string') raw.subject = input.subject;
   if (typeof input.key === 'string') raw.key = input.key;
   if (typeof input.html === 'string') raw.html = input.html;
+  if (typeof input.is_default === 'boolean') raw.is_default = input.is_default;
 
-  // Filtrer avec pick pour garantir que seules ces 3 colonnes sont envoyées
-  return pick(raw, ['subject', 'key', 'html']);
+  // Filtrer avec pick pour garantir que seules ces colonnes sont envoyées
+  const keys: string[] = ['subject', 'key', 'html'];
+  if (typeof input.is_default === 'boolean') keys.push('is_default');
+  return pick(raw, keys);
 }
 
 export async function saveEmailTemplateA(id: string, input: EmailTemplateInput) {
@@ -127,7 +131,11 @@ export async function saveEmailTemplate(input: EmailTemplateInput): Promise<Save
         type: input.key,
         html_body: input.html,
       };
-      const payloadB = pick(rawB, ['subject', 'type', 'html_body']);
+      if (typeof input.is_default === 'boolean') rawB.is_default = input.is_default;
+
+      const keysB = ['subject', 'type', 'html_body'];
+      if (typeof input.is_default === 'boolean') keysB.push('is_default');
+      const payloadB = pick(rawB, keysB);
 
       const { data, error, status } = await supabase
         .from('email_templates')
@@ -153,10 +161,12 @@ export async function saveEmailTemplate(input: EmailTemplateInput): Promise<Save
       tenant_id: input.tenant_id ?? null,
     };
     if (input.text_body !== undefined) rawA.text_body = input.text_body;
+    if (typeof input.is_default === 'boolean') rawA.is_default = input.is_default;
 
     // Filtrer pour n'envoyer QUE les colonnes qui existent (Mode A)
     const allowedKeysA = ['subject', 'key', 'html', 'tenant_id'];
     if (input.text_body !== undefined) allowedKeysA.push('text_body');
+    if (typeof input.is_default === 'boolean') allowedKeysA.push('is_default');
     const payloadA = pick(rawA, allowedKeysA);
 
     const { data, error, status } = await supabase
@@ -183,10 +193,12 @@ export async function saveEmailTemplate(input: EmailTemplateInput): Promise<Save
       tenant_id: input.tenant_id ?? null,
     };
     if (input.text_body !== undefined) rawB.text_body = input.text_body;
+    if (typeof input.is_default === 'boolean') rawB.is_default = input.is_default;
 
     // Filtrer pour n'envoyer QUE les colonnes qui existent (Mode B)
     const allowedKeysB = ['subject', 'type', 'html_body', 'tenant_id'];
     if (input.text_body !== undefined) allowedKeysB.push('text_body');
+    if (typeof input.is_default === 'boolean') allowedKeysB.push('is_default');
     const payloadB = pick(rawB, allowedKeysB);
 
     const { data, error, status } = await supabase

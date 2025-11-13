@@ -19,6 +19,8 @@ export interface NormalizedTemplate {
   html: string;
   /** Last update timestamp */
   updated_at?: string;
+  /** Is this template available as default for clubs */
+  is_default?: boolean;
 }
 
 /**

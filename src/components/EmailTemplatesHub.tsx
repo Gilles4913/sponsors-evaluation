@@ -40,6 +40,7 @@ export function EmailTemplatesHub() {
   const [editForm, setEditForm] = useState({
     subject: '',
     html: '',
+    is_default: false,
   });
   const [previewHtml, setPreviewHtml] = useState('');
   const [showPreview, setShowPreview] = useState(false);
@@ -130,6 +131,7 @@ export function EmailTemplatesHub() {
     setEditForm({
       subject: template.subject,
       html: template.html,
+      is_default: template.is_default || false,
     });
     setShowPreview(false);
     setPreviewHtml('');
@@ -144,7 +146,7 @@ export function EmailTemplatesHub() {
     setCreateMode(false);
     setSelectedTemplate(null);
     setNewTemplateKey('');
-    setEditForm({ subject: '', html: '' });
+    setEditForm({ subject: '', html: '', is_default: false });
     setShowPreview(false);
     setPreviewHtml('');
     setExampleJsonText(JSON.stringify(DEFAULT_EXAMPLE_VALUES, null, 2));
@@ -282,6 +284,7 @@ export function EmailTemplatesHub() {
         key: createMode ? newTemplateKey.trim() : selectedTemplate!.key,
         subject: editForm.subject,
         html: editForm.html,
+        is_default: editForm.is_default,
       });
 
       if (result.ok) {
@@ -451,7 +454,7 @@ export function EmailTemplatesHub() {
                 onClick={() => {
                   setCreateMode(true);
                   setNewTemplateKey('');
-                  setEditForm({ subject: '', html: '' });
+                  setEditForm({ subject: '', html: '', is_default: false });
                   setSelectedTemplate(null);
                   setDrawerOpen(true);
                 }}
@@ -610,6 +613,27 @@ export function EmailTemplatesHub() {
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
                 />
               </div>
+
+              {(createMode || selectedTemplate?.scope === 'global') && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editForm.is_default}
+                      onChange={(e) => setEditForm({ ...editForm, is_default: e.target.checked })}
+                      className="w-4 h-4 text-green-600 bg-slate-50 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-green-500"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-semibold text-green-900 dark:text-green-200">
+                        Template "Par défaut"
+                      </span>
+                      <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
+                        Cochez pour rendre ce template disponible par défaut pour tous les clubs
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-3">
